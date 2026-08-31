@@ -1,0 +1,32 @@
+{
+    "name": "ensloppify",
+    "version": "0.1.0",
+    "type": "module",
+    "files": [
+        "./dist"
+    ],
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "scripts": {
+        "build": "tsc",
+        "test": "vitest --ui"
+    },
+    "dependencies": {
+        "acorn": "^8.18.0",
+        "acorn-loose": "^8.5.2",
+        "acorn-walk": "^8.3.5",
+        "eval-estree-expression": "^4.0.0"
+    },
+    "devDependencies": {
+        "typescript": "^6.0.0",
+        "vitest": "^4.1.11",
+        "@vitest/ui": "^4.1.11",
+        "@vitest/browser-playwright": "^4.1.11"
+    }
+}

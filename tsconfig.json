@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "target": "es2022",
+        "module": "es2022",
+        "moduleResolution": "bundler",
+        "lib": ["ES2020", "DOM"],
+
+        "declaration": true,
+        "sourceMap": true,
+
+        "rootDir": "src",
+        "outDir": "dist",
+
+        "noEmitOnError": true
+    },
+    "include": ["src/**/*.ts"],
+    "exclude": ["dist"]
+}
