@@ -1,8 +1,8 @@
 import { test, assert } from "vitest";
 import { patchModuleImportsRecursively } from "./module";
 import { findImports, findImportsRecursive } from "./module.internal";
-import { SourcePatchScriptData } from "./data";
-import { SourcePatcher, SourcePatchImplementation } from "./lib";
+import { SourcePatchScriptData } from "../data";
+import { SourcePatcher, SourcePatchImplementation } from "../lib";
 
 test(
     "findImports_findsImports",
@@ -145,7 +145,7 @@ test(
         ];
 
         const sourcePatcher = new SourcePatcher(patchers);
-        await sourcePatcher.patchToBlobUrl(`import { foo } from "./bar";`, new URL("https://example.com/"));
+        await sourcePatcher.patchSourceToBlobUrl(`import { foo } from "./bar";`, new URL("https://example.com/"));
 
         assert(barPatcherRan, "Patcher for imported module didn't run");
     }

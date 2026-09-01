@@ -1,7 +1,7 @@
 import * as acorn from "acorn";
 import * as acorn_walk from "acorn-walk";
 import { evaluate as eval_estree_expression, variables as eval_estree_expression_variables } from "eval-estree-expression";
-import { SourcePatchScriptData } from "./data";
+import { SourcePatchScriptData } from "../data";
 import { SourceDownloadCallback } from "./module";
 
 export type FoundImport = {

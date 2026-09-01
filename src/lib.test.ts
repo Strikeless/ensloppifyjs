@@ -30,7 +30,7 @@ test(
         ];
 
         const sourcePatcher = new SourcePatcher([patch]);
-        const patchedScriptBlobUrl = await sourcePatcher.patchToBlobUrl(originalScript, new URL("https://example.com/"));
+        const patchedScriptBlobUrl = await sourcePatcher.patchSourceToBlobUrl(originalScript, new URL("https://example.com/"));
 
         const patchedScriptSource = await (await fetch(patchedScriptBlobUrl)).text();
         const evalResult = eval(patchedScriptSource);

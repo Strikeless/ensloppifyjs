@@ -1,6 +1,6 @@
 import { findImports, findImportsRecursive } from "./module.internal";
-import { SourcePatchScriptData } from "./data";
-import { SourcePatchCondition, SourcePatchFunction } from "./lib";
+import { SourcePatchScriptData } from "../data";
+import { SourcePatchCondition, SourcePatchFunction } from "../lib";
 
 export type SourceDownloadCallback = (importedSourceUrl: string) => string | Promise<string>;
 
@@ -21,10 +21,18 @@ export function patchModuleImportsRecursively(
             const importedScriptSource = await cachingSourceDownloadCallback(foundImport.resolvedSourceUrl);
             const importedScriptData = new SourcePatchScriptData(importedScriptSource, foundImport.resolvedSourceUrl);
 
-            const importedScriptMatchingPatchFunctions = await sourcePatcher.getMatchingPatchFunctions(importedScriptData);
-            for (const matchingPatchFunction of importedScriptMatchingPatchFunctions) {
-                await matchingPatchFunction(sourcePatcher, importedScriptData);
-            }
+            // No need to proceed with updating the import if the imported script doesn't need any patching.
+            if (!await sourcePatcher.needsPatching(importedScriptData)) continue;
+
+            // Patch the imported script and update the import's source to point to the patched version.
+            // If any sub-imports need to be patched, this will get applied recursively.
+            const patchedImportedScriptBlobUrl = await sourcePatcher.patchDataToBlobUrl(importedScriptData);
+            scriptData.source = stringReplaceAtBounds(
+                scriptData.source,
+                foundImport.sourceValueStartIndex,
+                foundImport.sourceValueEndIndex,
+                `"${patchedImportedScriptBlobUrl.href}"`,
+            );
         }
     };
 
@@ -74,4 +82,10 @@ function cachedSourceDownloadCallback(originalSourceDownloadCallback: SourceDown
         sourceDownloadCache.set(importedSourceUrl, downloadedSource);
         return downloadedSource;
     };
+}
+
+function stringReplaceAtBounds(str: string, replaceStartIndex: number, replaceEndIndex: number, replacement: string): string {
+    const strPreReplacement = str.slice(0, replaceStartIndex);
+    const strPostReplacement = str.slice(replaceEndIndex + 1);
+    return strPreReplacement + replacement + strPostReplacement;
 }

@@ -19,7 +19,7 @@ export class SourcePatcher {
     private patchFunctions: SourcePatchImplementation[];
     private options: SourcePatcherOptions;
 
-    private patchedBlobUrlsByOriginalUrl: Map<URL, URL | null> = new Map();
+    private patchedBlobUrlsByOriginalUrl: Map<string, URL | null> = new Map();
 
     private matchingPatchFunctionsCache: Map<string, SourcePatchFunction[]> = new Map();
 
@@ -31,23 +31,28 @@ export class SourcePatcher {
         this.options = options;
     }
 
-    public async patchToBlobUrl(scriptSource: string, scriptOriginCanonicalUrl: URL): Promise<URL> {
-        const alreadyPatchedScriptBlobUrl = this.patchedBlobUrlsByOriginalUrl.get(scriptOriginCanonicalUrl);
+    public async patchSourceToBlobUrl(scriptSource: string, scriptOriginCanonicalUrl: URL): Promise<URL> {
+        const scriptData = new SourcePatchScriptData(scriptSource, scriptOriginCanonicalUrl.href);
+        return await this.patchDataToBlobUrl(scriptData);
+    }
+
+    public async patchDataToBlobUrl(scriptData: SourcePatchScriptData): Promise<URL> {
+        const alreadyPatchedScriptBlobUrl = this.patchedBlobUrlsByOriginalUrl.get(scriptData.sourceOriginUrl);
         switch (alreadyPatchedScriptBlobUrl) {
             // This script has not yet been patched.
             case undefined: break;
             // This script has already been checked and does not require any patching/fixing. Return the URL of the original script.
-            case null: return scriptOriginCanonicalUrl;
+            case null: return new URL(scriptData.sourceOriginUrl);
             // This script has already been checked and patched. Return the blob URL to the patched script.
             default: return alreadyPatchedScriptBlobUrl;
         }
 
-        const newlyPatchedScriptSource = await this.patchSource(scriptSource, scriptOriginCanonicalUrl.href);
+        const newlyPatchedScriptSource = await this.getPatchedSource(scriptData);
 
         if (newlyPatchedScriptSource == null) {
             // This script didn't require any patching. Just cache the result and keep using the original script URL.
-            this.patchedBlobUrlsByOriginalUrl.set(scriptOriginCanonicalUrl, null);
-            return scriptOriginCanonicalUrl;
+            this.patchedBlobUrlsByOriginalUrl.set(scriptData.sourceOriginUrl, null);
+            return new URL(scriptData.sourceOriginUrl);
         }
 
         const newlyPatchedScriptBlobUrl = new URL(
@@ -61,7 +66,7 @@ export class SourcePatcher {
         // We must save the blob URL to the patched script so that we'll know to refer to the same,
         // already previously patched version if this script gets patched again (due to recursiveImportPatch, for example).
         // Not only is this an optimization, it's also required to preserve the "execute once" module behavior when the script is imported many times.
-        this.patchedBlobUrlsByOriginalUrl.set(scriptOriginCanonicalUrl, newlyPatchedScriptBlobUrl);
+        this.patchedBlobUrlsByOriginalUrl.set(scriptData.sourceOriginUrl, newlyPatchedScriptBlobUrl);
 
         return newlyPatchedScriptBlobUrl;
     }
@@ -140,11 +145,9 @@ export class SourcePatcher {
         return matchingPatchFunctions.length > 0;
     }
 
-    private async patchSource(scriptSource: string, scriptOriginCanonicalUrl: string): Promise<string | null> {
-        const scriptData = new SourcePatchScriptData(scriptSource, scriptOriginCanonicalUrl);
-
+    private async getPatchedSource(scriptData: SourcePatchScriptData): Promise<string | null> {
         const matchingPatchFunctions = await this.getMatchingPatchFunctions(scriptData);
-        if (matchingPatchFunctions.length == 0 && this.options.alwaysUsePatched != true) {
+        if (matchingPatchFunctions.length == 0) {
             // There is nothing to patch in this source, so tell the patcher to keep using the original script instead.
             return null;
         }
