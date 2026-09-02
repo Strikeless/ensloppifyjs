@@ -1,8 +1,5 @@
-import { findImports, findImportsRecursive } from "./module.internal";
-import { SourcePatchScriptData } from "../data";
-import { SourcePatchCondition, SourcePatchFunction } from "../lib";
-
-export type SourceDownloadCallback = (importedSourceUrl: string) => string | Promise<string>;
+import { findImports, findImportsRecursive, scriptDataFromImportAndSource } from "./module.internal";
+import { SourceDownloadCallback, SourcePatchCondition, SourcePatchFunction } from "../patcher";
 
 export function patchModuleImportsRecursively(
     importedSourceDownloadCallback: SourceDownloadCallback,
@@ -19,14 +16,17 @@ export function patchModuleImportsRecursively(
 
         for (const foundImport of directImports) {
             const importedScriptSource = await cachingSourceDownloadCallback(foundImport.resolvedSourceUrl);
-            const importedScriptData = new SourcePatchScriptData(importedScriptSource, foundImport.resolvedSourceUrl);
+            const importedScriptData = scriptDataFromImportAndSource(foundImport, importedScriptSource);
 
-            // No need to proceed with updating the import if the imported script doesn't need any patching.
-            if (!await sourcePatcher.needsPatching(importedScriptData)) continue;
-
-            // Patch the imported script and update the import's source to point to the patched version.
-            // If any sub-imports need to be patched, this will get applied recursively.
+            // Patch the imported script, getting a blob URL of the patched version that we can replace the import with.
+            // Note that if any sub-imports need to be patched, this will get applied recursively.
             const patchedImportedScriptBlobUrl = await sourcePatcher.patchDataToBlobUrl(importedScriptData);
+            if (patchedImportedScriptBlobUrl == null) {
+                // This imported script doesn't need any patching, nothing to replace the import with.
+                continue;
+            }
+
+            // Patch the import statement/expression to point to the patched version of the imported script.
             scriptData.source = stringReplaceAtBounds(
                 scriptData.source,
                 foundImport.sourceValueStartIndex,
@@ -48,7 +48,7 @@ export function patchModuleImportsRecursively(
 
         for (const foundImport of recursivelyFoundImports) {
             const importedScriptSource = await cachingSourceDownloadCallback(foundImport.resolvedSourceUrl);
-            const importedScriptData = new SourcePatchScriptData(importedScriptSource, foundImport.resolvedSourceUrl);
+            const importedScriptData = scriptDataFromImportAndSource(foundImport, importedScriptSource);
 
             const importedScriptNeedsPatching = await sourcePatcher.needsPatching(
                 importedScriptData,

@@ -1,18 +1,10 @@
 import { assert, test } from "vitest";
-import { SourcePatcher, SourcePatchImplementation } from "./lib";
+import { SourcePatcher, SourcePatchImplementation } from "./patcher";
+import { SourcePatchScriptData } from "./data";
 
 test(
     "basicScriptPatchGetsApplied",
     async () => {
-        const originalScript = `
-            (
-                () => {
-                    console.log("Hello, world!");
-                    return false;
-                }
-            )();
-        `;
-
         const patch: SourcePatchImplementation = [
             (..._patchConditionArgs) => {
                 return true;
@@ -29,8 +21,21 @@ test(
             },
         ];
 
+        const scriptData = SourcePatchScriptData.ofModule(
+            `
+                (
+                    () => {
+                        console.log("Hello, world!");
+                        return false;
+                    }
+                )();
+            `,
+            "https://example.com/",
+        );
+
         const sourcePatcher = new SourcePatcher([patch]);
-        const patchedScriptBlobUrl = await sourcePatcher.patchSourceToBlobUrl(originalScript, new URL("https://example.com/"));
+        const patchedScriptBlobUrl = await sourcePatcher.patchDataToBlobUrl(scriptData);
+        assert(patchedScriptBlobUrl != null, "No patches applied");
 
         const patchedScriptSource = await (await fetch(patchedScriptBlobUrl)).text();
         const evalResult = eval(patchedScriptSource);

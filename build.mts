@@ -19,7 +19,7 @@ await esbuild.build({
     outfile: "./dist/esm/index.mjs",
     format: "esm",
     platform: "neutral",
-    target: ["es2022"]
+    target: ["es2022"],
 })
 
 // Bundle for IIFE, to be used in browsers.
@@ -27,6 +27,7 @@ await esbuild.build({
     ...commonBundleOptions,
     outfile: "./dist/iife/index.js",
     format: "iife",
+    globalName: "Ensloppify",
     platform: "browser",
-    target: ["es2022"]
+    target: ["es2022"],
 });

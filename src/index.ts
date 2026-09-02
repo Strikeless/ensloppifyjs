@@ -1,3 +1,3 @@
-export { SourcePatchScriptData } from "./data";
-export { SourcePatcher, SourcePatcherOptions, SourcePatchCondition, SourcePatchFunction } from "./lib";
+export { SourcePatchScriptData, SourcePatchScriptDataKey, SourceType } from "./data";
+export { SourcePatcher, SourcePatchCondition, SourcePatchFunction, SourcePatchImplementation, SourceDownloadCallback } from "./patcher";
 export { patchModuleImportsRecursively } from "./patchers/module";

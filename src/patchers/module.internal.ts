@@ -2,7 +2,7 @@ import * as acorn from "acorn";
 import * as acorn_walk from "acorn-walk";
 import { evaluate as eval_estree_expression, variables as eval_estree_expression_variables } from "eval-estree-expression";
 import { SourcePatchScriptData } from "../data";
-import { SourceDownloadCallback } from "./module";
+import { SourceDownloadCallback } from "../patcher";
 
 export type FoundImport = {
     resolvedSourceUrl: string,
@@ -23,7 +23,7 @@ export async function findImportsRecursive(
         foundImports.push(foundImport);
 
         const importedScriptSource = await importedSourceDownloadCallback(foundImport.resolvedSourceUrl);
-        const importedScriptData = new SourcePatchScriptData(importedScriptSource, foundImport.resolvedSourceUrl);
+        const importedScriptData = scriptDataFromImportAndSource(foundImport, importedScriptSource);
 
         const recursivelyFoundImports = await findImportsRecursive(
             importedScriptData,
@@ -104,8 +104,17 @@ export function resolveImportSourceUrl(
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import
     // https://html.spec.whatwg.org/multipage/webappapis.html#resolve-a-module-specifier
     try {
-        return new URL(importSourceValue, importerScriptData.sourceOriginUrl).href;
+        return new URL(importSourceValue, importerScriptData.sourceOriginCanonicalUrl).href;
     } catch {
         return null;
     }
+}
+
+export function scriptDataFromImportAndSource(foundImport: FoundImport, importedScriptSource: string): SourcePatchScriptData {
+    return new SourcePatchScriptData(
+        { type: "url", originCanonicalUrl: foundImport.resolvedSourceUrl },
+        importedScriptSource,
+        "module",
+        foundImport.resolvedSourceUrl,
+    );
 }
