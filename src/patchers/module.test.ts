@@ -7,7 +7,7 @@ import { SourcePatcher, SourcePatchImplementation } from "../patcher";
 test(
     "findImports_findsImports",
     () => {
-        const scriptData = SourcePatchScriptData.ofModule(
+        const scriptData = SourcePatchScriptData.ofModuleSource(
             `
                 import("./foo");
                 import default as "_buzz", * as _bar from "../bar.js";
@@ -36,7 +36,7 @@ test(
 test(
     "findImports_resolvesUrls",
     () => {
-        const scriptData = SourcePatchScriptData.ofModule(
+        const scriptData = SourcePatchScriptData.ofModuleSource(
             `
                 import("./foo");
                 import("../bar.js");
@@ -83,7 +83,7 @@ test(
             }
         };
 
-        const scriptData = SourcePatchScriptData.ofModule(
+        const scriptData = SourcePatchScriptData.ofModuleSource(
             `import("./a")`,
             "https://example.com/",
         );
@@ -119,7 +119,7 @@ test(
             }
         };
 
-        const scriptData = SourcePatchScriptData.ofModule(
+        const scriptData = SourcePatchScriptData.ofModuleSource(
             `import("./a")`,
             "https://example.com/",
         );
@@ -142,7 +142,7 @@ test(
             ]
         ];
 
-        const scriptData = SourcePatchScriptData.ofModule(
+        const scriptData = SourcePatchScriptData.ofModuleSource(
             `import { foo } from "./bar";`,
             "https://example.com/",
         )

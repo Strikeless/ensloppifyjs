@@ -23,7 +23,7 @@ export async function findImportsRecursive(
         foundImports.push(foundImport);
 
         const importedScriptSource = await importedSourceDownloadCallback(foundImport.resolvedSourceUrl);
-        const importedScriptData = scriptDataFromImportAndSource(foundImport, importedScriptSource);
+        const importedScriptData = SourcePatchScriptData.ofModuleSource(importedScriptSource, foundImport.resolvedSourceUrl);
 
         const recursivelyFoundImports = await findImportsRecursive(
             importedScriptData,
@@ -108,13 +108,4 @@ export function resolveImportSourceUrl(
     } catch {
         return null;
     }
-}
-
-export function scriptDataFromImportAndSource(foundImport: FoundImport, importedScriptSource: string): SourcePatchScriptData {
-    return new SourcePatchScriptData(
-        { type: "url", originCanonicalUrl: foundImport.resolvedSourceUrl },
-        importedScriptSource,
-        "module",
-        foundImport.resolvedSourceUrl,
-    );
 }

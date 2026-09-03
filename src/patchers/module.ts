@@ -1,5 +1,6 @@
-import { findImports, findImportsRecursive, scriptDataFromImportAndSource } from "./module.internal";
+import { findImports, findImportsRecursive } from "./module.internal";
 import { SourceDownloadCallback, SourcePatchCondition, SourcePatchFunction } from "../patcher";
+import { SourcePatchScriptData } from "../data";
 
 export function patchModuleImportsRecursively(
     importedSourceDownloadCallback: SourceDownloadCallback,
@@ -16,7 +17,7 @@ export function patchModuleImportsRecursively(
 
         for (const foundImport of directImports) {
             const importedScriptSource = await cachingSourceDownloadCallback(foundImport.resolvedSourceUrl);
-            const importedScriptData = scriptDataFromImportAndSource(foundImport, importedScriptSource);
+            const importedScriptData = SourcePatchScriptData.ofModuleSource(importedScriptSource, foundImport.resolvedSourceUrl);
 
             // Patch the imported script, getting a blob URL of the patched version that we can replace the import with.
             // Note that if any sub-imports need to be patched, this will get applied recursively.
@@ -48,7 +49,7 @@ export function patchModuleImportsRecursively(
 
         for (const foundImport of recursivelyFoundImports) {
             const importedScriptSource = await cachingSourceDownloadCallback(foundImport.resolvedSourceUrl);
-            const importedScriptData = scriptDataFromImportAndSource(foundImport, importedScriptSource);
+            const importedScriptData = SourcePatchScriptData.ofModuleSource(importedScriptSource, foundImport.resolvedSourceUrl);
 
             const importedScriptNeedsPatching = await sourcePatcher.needsPatching(
                 importedScriptData,

@@ -21,7 +21,7 @@ test(
             },
         ];
 
-        const scriptData = SourcePatchScriptData.ofModule(
+        const scriptData = SourcePatchScriptData.ofModuleSource(
             `
                 (
                     () => {

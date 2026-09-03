@@ -19,40 +19,9 @@ export class SourcePatcher {
 
     public async patchScriptElementToBlobUrl(
         scriptElement: HTMLScriptElement,
-        scriptSrcDownloadCallback: SourceDownloadCallback,
+        srcDownloadCallback: SourceDownloadCallback,
     ): Promise<URL | null> {
-        let scriptSourceOriginCanonicalUrl = scriptElement.src != null
-            // The script originates from it's src URL, we just need to resolve that with the element's base URI.
-            ? new URL(scriptElement.src, scriptElement.baseURI).href
-            // The script is inlined into the document, so it's "origin" is the document.
-            : scriptElement.ownerDocument.URL;
-
-        let scriptDataKey: SourcePatchScriptDataKey = scriptElement.src != null
-            // This is a script included by a script element, but it is loaded from another origin (is not inlined into the element).
-            ? { type: "url", originCanonicalUrl: scriptSourceOriginCanonicalUrl }
-            // This is a script inlined into the script element.
-            : { type: "inlineHtmlScriptElement", scriptElement };
-
-        let scriptSource = scriptElement.src != null
-            ? await scriptSrcDownloadCallback(scriptSourceOriginCanonicalUrl)
-            : scriptElement.textContent;
-
-        let scriptSourceType: SourceType;
-        switch (scriptElement.type) {
-            case "script": scriptSourceType = "script"; break;
-            case "module": scriptSourceType = "module"; break;
-            // Let's assume that this is a classic script (very incorrectly, see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type).
-            // This could be a javascript MIME-type (see https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/MIME_types#textjavascript), in which case our assumption would be correct.
-            // This could also be data that the browser doesn't interpret as a script, but at that point you probably (hopefully) wouldn't be calling this method. 
-            default: scriptSourceType = "script"; break;
-        }
-
-        const scriptData = new SourcePatchScriptData(
-            scriptDataKey,
-            scriptSource,
-            scriptSourceType,
-            scriptSourceOriginCanonicalUrl,
-        );
+        const scriptData = await SourcePatchScriptData.ofScriptElement(scriptElement, srcDownloadCallback);
         return await this.patchDataToBlobUrl(scriptData);
     }
 
