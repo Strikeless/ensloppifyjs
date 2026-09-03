@@ -2,8 +2,8 @@ import { SourcePatchScriptData, SourcePatchScriptDataKey, SourceType } from "./d
 
 export type SourcePatchCondition = string
     | RegExp
-    | ((sourcePatcher: SourcePatcher, scriptData: SourcePatchScriptData) => boolean | Promise<boolean>);
-export type SourcePatchFunction = (sourcePatcher: SourcePatcher, scriptData: SourcePatchScriptData) => void | Promise<void>;
+    | ((scriptData: SourcePatchScriptData, sourcePatcher: SourcePatcher) => boolean | Promise<boolean>);
+export type SourcePatchFunction = (scriptData: SourcePatchScriptData, sourcePatcher: SourcePatcher) => void | Promise<void>;
 export type SourcePatchImplementation = [SourcePatchCondition, SourcePatchFunction];
 
 export type SourceDownloadCallback = (sourceOriginUrl: string) => string | Promise<string>;
@@ -116,7 +116,7 @@ export class SourcePatcher {
                 return scriptData.sourceOriginCanonicalUrl.includes(patchCondition);
             }
             if (typeof patchCondition == "function") {
-                return await patchCondition(this, scriptData);
+                return await patchCondition(scriptData, this);
             };
         };
 
@@ -147,7 +147,7 @@ export class SourcePatcher {
 
         // Apply all patcher functions to the source (in the same order as the patcher functions were defined).
         for (const patchFunction of matchingPatchFunctions) {
-            await patchFunction(this, scriptData);
+            await patchFunction(scriptData, this);
         }
 
         return scriptData.source;

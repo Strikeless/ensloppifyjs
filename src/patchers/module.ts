@@ -7,7 +7,7 @@ export function patchModuleImportsRecursively(
 ): [SourcePatchCondition, SourcePatchFunction] {
     const cachingSourceDownloadCallback = cachedSourceDownloadCallback(importedSourceDownloadCallback);
 
-    const patchFunction: SourcePatchFunction = async (sourcePatcher, scriptData) => {
+    const patchFunction: SourcePatchFunction = async (scriptData, sourcePatcher) => {
         /*
          * Some module imported by this script (including sub-imports) needs to be patched.
          * Run any relevant source patches on imported modules, and update the imports to point to the patched modules.
@@ -37,7 +37,7 @@ export function patchModuleImportsRecursively(
         }
     };
 
-    const patchCondition: SourcePatchCondition = async (sourcePatcher, scriptData) => {
+    const patchCondition: SourcePatchCondition = async (scriptData, sourcePatcher) => {
         /*
          * Check if any module imported by this script (including sub-imports) needs to be patched.
          * If so, then this script will also need to be patched to update the imports to point to patched versions of the imported scripts.

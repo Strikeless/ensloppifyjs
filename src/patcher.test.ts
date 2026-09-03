@@ -9,7 +9,7 @@ test(
             (..._patchConditionArgs) => {
                 return true;
             },
-            (_sourcePatcher, scriptData) => {
+            (scriptData, _sourcePatcher) => {
                 scriptData.source = `
                     (
                         () => {
