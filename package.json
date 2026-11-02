@@ -1,17 +1,20 @@
 {
     "name": "ensloppify",
-    "version": "1.0.0-beta.1",
+    "version": "1.0.0-beta.2",
     "type": "module",
     "files": [
         "./LICENSE",
-        "./dist/esm",
-        "./dist/types"
+        "./dist"
     ],
     "module": "./dist/esm/index.mjs",
     "types": "./dist/types/index.d.ts",
     "exports": {
         ".": {
             "import": "./dist/esm/index.mjs",
+            "types": "./dist/types/index.d.ts"
+        },
+        "./iife": {
+            "import": "./dist/iife/index.js",
             "types": "./dist/types/index.d.ts"
         }
     },
@@ -20,7 +23,7 @@
         "test": "vitest --ui"
     },
     "dependencies": {
-        "acorn": "^8.18.0",
+        "acorn": "^8.19.0",
         "acorn-loose": "^8.5.2",
         "acorn-walk": "^8.3.5",
         "eval-estree-expression": "^4.0.0"
