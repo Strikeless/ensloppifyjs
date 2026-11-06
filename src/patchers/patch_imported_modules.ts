@@ -1,22 +1,27 @@
-import { findImports, findImportsRecursive } from "./module.internal";
-import { SourceDownloadCallback, SourcePatchCondition, SourcePatchFunction } from "../patcher";
+import { type SourceDownloadCallback, type SourcePatchCondition, type SourcePatchFunction } from "../patcher";
 import { SourcePatchScriptData } from "../data";
+import { Util } from "..";
+import { MassReplacer } from "../util";
 
-export function patchModuleImportsRecursively(
+export function patchImportedModulesRecursively(
     importedSourceDownloadCallback: SourceDownloadCallback,
 ): [SourcePatchCondition, SourcePatchFunction] {
-    const cachingSourceDownloadCallback = cachedSourceDownloadCallback(importedSourceDownloadCallback);
-
     const patchFunction: SourcePatchFunction = async (scriptData, sourcePatcher) => {
         /*
          * Some module imported by this script (including sub-imports) needs to be patched.
          * Run any relevant source patches on imported modules, and update the imports to point to the patched modules.
          * Note that this will recursively apply this patch, taking care of sub-imports as well.
          */
-        const directImports = findImports(scriptData);
+        const sourceReplacer = new MassReplacer(scriptData.source);
+        const directImports = Util.findImports(scriptData);
 
         for (const foundImport of directImports) {
-            const importedScriptSource = await cachingSourceDownloadCallback(foundImport.resolvedSourceUrl);
+            if (foundImport.resolvedSourceUrl == null) {
+                // The import source URL failed to resolve, not much we can do here.
+                continue;
+            }
+
+            const importedScriptSource = await importedSourceDownloadCallback(foundImport.resolvedSourceUrl);
             const importedScriptData = SourcePatchScriptData.ofModuleSource(importedScriptSource, foundImport.resolvedSourceUrl);
 
             // Patch the imported script, getting a blob URL of the patched version that we can replace the import with.
@@ -28,13 +33,14 @@ export function patchModuleImportsRecursively(
             }
 
             // Patch the import statement/expression to point to the patched version of the imported script.
-            scriptData.source = stringReplaceAtBounds(
-                scriptData.source,
+            sourceReplacer.replaceRange(
                 foundImport.sourceValueStartIndex,
                 foundImport.sourceValueEndIndex,
                 `"${patchedImportedScriptBlobUrl.href}"`,
             );
         }
+
+        scriptData.source = sourceReplacer.apply();
     };
 
     const patchCondition: SourcePatchCondition = async (scriptData, sourcePatcher) => {
@@ -45,10 +51,15 @@ export function patchModuleImportsRecursively(
 
         // We're doing the recursion manually instead of letting the source patcher handle that,
         // because this way we can detect and prevent getting stuck in import-loops.
-        const recursivelyFoundImports = await findImportsRecursive(scriptData, cachingSourceDownloadCallback);
+        const recursivelyFoundImports = await Util.findImportsRecursive(scriptData, importedSourceDownloadCallback);
 
         for (const foundImport of recursivelyFoundImports) {
-            const importedScriptSource = await cachingSourceDownloadCallback(foundImport.resolvedSourceUrl);
+            if (foundImport.resolvedSourceUrl == null) {
+                // The import source URL failed to resolve, not much we can do here.
+                continue;
+            }
+
+            const importedScriptSource = await importedSourceDownloadCallback(foundImport.resolvedSourceUrl);
             const importedScriptData = SourcePatchScriptData.ofModuleSource(importedScriptSource, foundImport.resolvedSourceUrl);
 
             const importedScriptNeedsPatching = await sourcePatcher.needsPatching(
@@ -70,23 +81,4 @@ export function patchModuleImportsRecursively(
     };
 
     return [patchCondition, patchFunction];
-}
-
-function cachedSourceDownloadCallback(originalSourceDownloadCallback: SourceDownloadCallback): SourceDownloadCallback {
-    const sourceDownloadCache: Map<string, string> = new Map();
-
-    return async (importedSourceUrl: string) => {
-        const cachedSource = sourceDownloadCache.get(importedSourceUrl);
-        if (typeof cachedSource != "undefined") return cachedSource;
-
-        const downloadedSource = await originalSourceDownloadCallback(importedSourceUrl);
-        sourceDownloadCache.set(importedSourceUrl, downloadedSource);
-        return downloadedSource;
-    };
-}
-
-function stringReplaceAtBounds(str: string, replaceStartIndex: number, replaceEndIndex: number, replacement: string): string {
-    const strPreReplacement = str.slice(0, replaceStartIndex);
-    const strPostReplacement = str.slice(replaceEndIndex + 1);
-    return strPreReplacement + replacement + strPostReplacement;
 }

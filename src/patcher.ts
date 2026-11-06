@@ -1,4 +1,4 @@
-import { SourcePatchScriptData, SourcePatchScriptDataKey, SourceType } from "./data";
+import { SourcePatchScriptData, type SourcePatchScriptDataKey } from "./data";
 
 export type SourcePatchCondition = string
     | RegExp

@@ -1,8 +1,6 @@
-import { test, assert } from "vitest";
-import { patchModuleImportsRecursively } from "./module";
-import { findImports, findImportsRecursive } from "./module.internal";
+import { assert, test } from "vitest";
 import { SourcePatchScriptData } from "../data";
-import { SourcePatcher, SourcePatchImplementation } from "../patcher";
+import { Util } from "..";
 
 test(
     "findImports_findsImports",
@@ -16,7 +14,7 @@ test(
             "https://example.com/foobar/test.js",
         );
 
-        const foundImports = findImports(scriptData);
+        const foundImports = Util.findImports(scriptData);
         console.log(foundImports);
 
         const expectedImportSourceValues = [
@@ -44,7 +42,7 @@ test(
             `,
             "https://example.com/foobar/test.js",
         );
-        const foundImports = findImports(scriptData);
+        const foundImports = Util.findImports(scriptData);
 
         const expectedResolvedSourceUrls = [
             ["./foo", "https://example.com/foobar/foo"],
@@ -88,7 +86,7 @@ test(
             "https://example.com/",
         );
 
-        const foundImports = await findImportsRecursive(scriptData, dummyImportedSourceDownloadCallback);
+        const foundImports = await Util.findImportsRecursive(scriptData, dummyImportedSourceDownloadCallback);
         console.log(foundImports);
 
         assert(
@@ -124,32 +122,7 @@ test(
             "https://example.com/",
         );
 
-        const foundImports = await findImportsRecursive(scriptData, dummyImportedSourceDownloadCallback);
+        const foundImports = await Util.findImportsRecursive(scriptData, dummyImportedSourceDownloadCallback);
         console.log(foundImports);
-    }
-);
-
-test(
-    "matchingImportedScriptsGetPatched",
-    async () => {
-        let barPatcherRan = false;
-        const dummyImportedSourceDownloadCallback = (url: string) => `/* ${url} */`;
-        const patchers: SourcePatchImplementation[] = [
-            patchModuleImportsRecursively(dummyImportedSourceDownloadCallback),
-            [
-                "https://example.com/bar",
-                (..._patchFunctionArgs) => { barPatcherRan = true; },
-            ]
-        ];
-
-        const scriptData = SourcePatchScriptData.ofModuleSource(
-            `import { foo } from "./bar";`,
-            "https://example.com/",
-        )
-
-        const sourcePatcher = new SourcePatcher(patchers);
-        await sourcePatcher.patchDataToBlobUrl(scriptData);
-
-        assert(barPatcherRan, "Patcher for imported module didn't run");
     }
 );

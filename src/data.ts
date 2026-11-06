@@ -1,6 +1,6 @@
 import * as acorn from "acorn";
 import * as acorn_loose from "acorn-loose";
-import { SourceDownloadCallback } from "./patcher";
+import { type SourceDownloadCallback } from "./patcher";
 
 export type SourceType = "module" | "script" | "commonjs";
 
@@ -16,6 +16,7 @@ export class SourcePatchScriptData {
     private _isSourceClean = true;
     private _ast: acorn.Program | null = null;
     private _isAstOutdated = true;
+    private _isAstLoose: boolean | null = null;
 
     /**
      * A key that can identify a {@link SourcePatchScriptData} by the unique script it refers to.
@@ -52,6 +53,11 @@ export class SourcePatchScriptData {
      * Whether {@link source} has been mutated since {@link ast} was last parsed by {@link parseAstIfOutdated}.
      */
     public get isAstOutdated(): boolean { return this._isAstOutdated; }
+    /**
+     * Whether {@link ast} was parsed by `acorn_loose` due to `acorn` failing.
+     * Returns `null` if and only if AST has not been parsed.
+     */
+    public get isAstLoose(): boolean | null { return this._isAstLoose; }
 
     public set source(value: string) {
         this._source = value;
@@ -140,7 +146,7 @@ export class SourcePatchScriptData {
     }
 
     /**
-     * Parses an AST of {@link source} using {@link acorn} or {@link acorn_loose} if {@link ast} is outdated (including `null`).
+     * Parses an AST of {@link source} using {@link acorn} or {@link acorn_loose} if {@link ast} is outdated (including if it has never been parsed).
      * 
      * The AST can later on be accessed as {@link ast} without reparsing, though you will then have to check {@link isAstOutdated} manually,
      * if you want to make sure that the AST is consistent with the current {@link source}.
@@ -166,8 +172,10 @@ export class SourcePatchScriptData {
 
         try {
             this._ast = acorn.parse(this.source, acornOptions);
+            this._isAstLoose = false;
         } catch {
             this._ast = acorn_loose.parse(this.source, acornOptions);
+            this._isAstLoose = true;
         }
 
         if (this._isSourceClean) {

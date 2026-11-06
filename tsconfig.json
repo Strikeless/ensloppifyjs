@@ -11,7 +11,8 @@
         "rootDir": "src",
         "outDir": "dist",
 
-        "noEmitOnError": true
+        "noEmitOnError": true,
+        "verbatimModuleSyntax": true
     },
     "include": [
         "src/**/*.ts"
